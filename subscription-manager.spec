@@ -198,7 +198,7 @@
 %global with_cockpit WITH_COCKPIT=false
 %endif
 
-%global subpackages SUBPACKAGES="%{?include_syspurpose:syspurpose}"
+%global subpackages SUBPACKAGES="%{?include_syspurpose:syspurpose} rhsm"
 
 # Build a list of python package to exclude from the build.
 # This is necessary because we have multiple rpms which may or may not
@@ -244,7 +244,7 @@
 %global use_rhsm_icons 0%{use_cockpit} || 0%{use_rhsm_gtk}
 
 Name: subscription-manager
-Version: 1.28.3
+Version: 1.28.4
 Release: 1%{?dist}
 Summary: Tools and libraries for subscription and repository management
 %if 0%{?suse_version}
@@ -408,7 +408,7 @@ Obsoletes: subscription-manager-plugin-container
 # certs would not work as expected without libdnf plugin
 Requires: libdnf-plugin-subscription-manager = %{version}
 # The dnf plugin is now part of subscription-manager
-Obsoletes: dnf-plugin-subscription-manager
+Obsoletes: dnf-plugin-subscription-manager < 1.27.3-1
 %endif
 
 %description
@@ -758,7 +758,7 @@ popd
 %install
 make -f Makefile install VERSION=%{version}-%{release} \
     PYTHON=%{__python} PREFIX=%{_prefix} \
-    DESTDIR=%{buildroot} PYTHON_SITELIB=%{python_sitearch} \
+    DESTDIR=%{buildroot} PYTHON_SITELIB=%{python_sitelib} \
     OS_VERSION=%{?fedora}%{?rhel}%{?suse_version} OS_DIST=%{dist} \
     COMPLETION_DIR=%{completion_dir} \
     RUN_DIR=%{run_dir} \
@@ -882,19 +882,19 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
     %dir %{_sysconfdir}/yum.repos.d
 %endif
 
-%dir %{python_sitearch}/rhsmlib/candlepin
-%dir %{python_sitearch}/rhsmlib/compat
-%dir %{python_sitearch}/rhsmlib/dbus
-%dir %{python_sitearch}/rhsmlib/dbus/facts
-%dir %{python_sitearch}/rhsmlib/dbus/objects
-%dir %{python_sitearch}/rhsmlib/facts
-%dir %{python_sitearch}/rhsmlib/services
-%dir %{python_sitearch}/subscription_manager-%{version}-*.egg-info
-%dir %{python_sitearch}/subscription_manager/api
-%dir %{python_sitearch}/subscription_manager/branding
-%dir %{python_sitearch}/subscription_manager/model
-%dir %{python_sitearch}/subscription_manager/plugin
-%dir %{python_sitearch}/subscription_manager/scripts
+%dir %{python_sitelib}/rhsmlib/candlepin
+%dir %{python_sitelib}/rhsmlib/compat
+%dir %{python_sitelib}/rhsmlib/dbus
+%dir %{python_sitelib}/rhsmlib/dbus/facts
+%dir %{python_sitelib}/rhsmlib/dbus/objects
+%dir %{python_sitelib}/rhsmlib/facts
+%dir %{python_sitelib}/rhsmlib/services
+%dir %{python_sitelib}/subscription_manager-%{version}-*.egg-info
+%dir %{python_sitelib}/subscription_manager/api
+%dir %{python_sitelib}/subscription_manager/branding
+%dir %{python_sitelib}/subscription_manager/model
+%dir %{python_sitelib}/subscription_manager/plugin
+%dir %{python_sitelib}/subscription_manager/scripts
 %dir %{_var}/spool/rhsm
 %dir %{_prefix}/share/polkit-1
 %dir %{_prefix}/share/polkit-1/actions
@@ -980,37 +980,37 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %{completion_dir}/rhsm-icon
 %endif
 
-%dir %{python_sitearch}/subscription_manager
+%dir %{python_sitelib}/subscription_manager
 
 # code, python modules and packages
-%{python_sitearch}/subscription_manager-*.egg-info/*
-%{python_sitearch}/subscription_manager/*.py*
-%{python_sitearch}/subscription_manager/api/*.py*
-%{python_sitearch}/subscription_manager/branding/*.py*
-%{python_sitearch}/subscription_manager/model/*.py*
-%{python_sitearch}/subscription_manager/plugin/__init__.py*
-%{python_sitearch}/subscription_manager/scripts/*.py*
+%{python_sitelib}/subscription_manager-*.egg-info/*
+%{python_sitelib}/subscription_manager/*.py*
+%{python_sitelib}/subscription_manager/api/*.py*
+%{python_sitelib}/subscription_manager/branding/*.py*
+%{python_sitelib}/subscription_manager/model/*.py*
+%{python_sitelib}/subscription_manager/plugin/__init__.py*
+%{python_sitelib}/subscription_manager/scripts/*.py*
 %if %{with python3}
-%{python_sitearch}/subscription_manager/__pycache__
-%{python_sitearch}/subscription_manager/api/__pycache__
-%{python_sitearch}/subscription_manager/branding/__pycache__
-%{python_sitearch}/subscription_manager/model/__pycache__
-%{python_sitearch}/subscription_manager/plugin/__pycache__
-%{python_sitearch}/subscription_manager/scripts/__pycache__
+%{python_sitelib}/subscription_manager/__pycache__
+%{python_sitelib}/subscription_manager/api/__pycache__
+%{python_sitelib}/subscription_manager/branding/__pycache__
+%{python_sitelib}/subscription_manager/model/__pycache__
+%{python_sitelib}/subscription_manager/plugin/__pycache__
+%{python_sitelib}/subscription_manager/scripts/__pycache__
 %endif
 
 # our gtk2/gtk3 compat modules
-%dir %{python_sitearch}/subscription_manager/ga_impls
-%{python_sitearch}/subscription_manager/ga_impls/__init__.py*
+%dir %{python_sitelib}/subscription_manager/ga_impls
+%{python_sitelib}/subscription_manager/ga_impls/__init__.py*
 %if %{with python3}
-%{python_sitearch}/subscription_manager/ga_impls/__pycache__
+%{python_sitelib}/subscription_manager/ga_impls/__pycache__
 %endif
 
 %if 0%{?gtk3}
-%{python_sitearch}/subscription_manager/ga_impls/ga_gtk3.py*
+%{python_sitelib}/subscription_manager/ga_impls/ga_gtk3.py*
 %else
-%dir %{python_sitearch}/subscription_manager/ga_impls/ga_gtk2
-%{python_sitearch}/subscription_manager/ga_impls/ga_gtk2/*.py*
+%dir %{python_sitelib}/subscription_manager/ga_impls/ga_gtk2
+%{python_sitelib}/subscription_manager/ga_impls/ga_gtk2/*.py*
 %endif
 
 # subscription-manager plugins
@@ -1036,24 +1036,24 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %endif
 
 # rhsmlib
-%dir %{python_sitearch}/rhsmlib
-%{python_sitearch}/rhsmlib/*.py*
-%{python_sitearch}/rhsmlib/candlepin/*.py*
-%{python_sitearch}/rhsmlib/compat/*.py*
-%{python_sitearch}/rhsmlib/facts/*.py*
-%{python_sitearch}/rhsmlib/services/*.py*
-%{python_sitearch}/rhsmlib/dbus/*.py*
-%{python_sitearch}/rhsmlib/dbus/facts/*.py*
-%{python_sitearch}/rhsmlib/dbus/objects/*.py*
+%dir %{python_sitelib}/rhsmlib
+%{python_sitelib}/rhsmlib/*.py*
+%{python_sitelib}/rhsmlib/candlepin/*.py*
+%{python_sitelib}/rhsmlib/compat/*.py*
+%{python_sitelib}/rhsmlib/facts/*.py*
+%{python_sitelib}/rhsmlib/services/*.py*
+%{python_sitelib}/rhsmlib/dbus/*.py*
+%{python_sitelib}/rhsmlib/dbus/facts/*.py*
+%{python_sitelib}/rhsmlib/dbus/objects/*.py*
 %if %{with python3}
-%{python_sitearch}/rhsmlib/__pycache__
-%{python_sitearch}/rhsmlib/candlepin/__pycache__
-%{python_sitearch}/rhsmlib/compat/__pycache__
-%{python_sitearch}/rhsmlib/dbus/__pycache__
-%{python_sitearch}/rhsmlib/dbus/facts/__pycache__
-%{python_sitearch}/rhsmlib/dbus/objects/__pycache__
-%{python_sitearch}/rhsmlib/facts/__pycache__
-%{python_sitearch}/rhsmlib/services/__pycache__
+%{python_sitelib}/rhsmlib/__pycache__
+%{python_sitelib}/rhsmlib/candlepin/__pycache__
+%{python_sitelib}/rhsmlib/compat/__pycache__
+%{python_sitelib}/rhsmlib/dbus/__pycache__
+%{python_sitelib}/rhsmlib/dbus/facts/__pycache__
+%{python_sitelib}/rhsmlib/dbus/objects/__pycache__
+%{python_sitelib}/rhsmlib/facts/__pycache__
+%{python_sitelib}/rhsmlib/services/__pycache__
 %endif
 
 %{_datadir}/polkit-1/actions/com.redhat.*.policy
@@ -1078,18 +1078,18 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %endif
 
 # Incude rt CLI tool
-%dir %{python_sitearch}/rct
-%{python_sitearch}/rct/*.py*
+%dir %{python_sitelib}/rct
+%{python_sitelib}/rct/*.py*
 %if %{with python3}
-%{python_sitearch}/rct/__pycache__
+%{python_sitelib}/rct/__pycache__
 %endif
 %attr(755,root,root) %{_bindir}/rct
 
 # Include consumer debug CLI tool
-%dir %{python_sitearch}/rhsm_debug
-%{python_sitearch}/rhsm_debug/*.py*
+%dir %{python_sitelib}/rhsm_debug
+%{python_sitelib}/rhsm_debug/*.py*
 %if %{with python3}
-%{python_sitearch}/rhsm_debug/__pycache__
+%{python_sitelib}/rhsm_debug/__pycache__
 %endif
 %attr(755,root,root) %{_bindir}/rhsm-debug
 
@@ -1105,13 +1105,13 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %if %{use_rhsm_gtk}
 %files -n rhsm-gtk
 %defattr(-,root,root,-)
-%dir %{python_sitearch}/subscription_manager/gui
-%{python_sitearch}/subscription_manager/gui/*.py*
-%{python_sitearch}/subscription_manager/gui/data/ui/*.ui
-%{python_sitearch}/subscription_manager/gui/data/glade/*.glade
-%{python_sitearch}/subscription_manager/gui/data/icons/*.svg
+%dir %{python_sitelib}/subscription_manager/gui
+%{python_sitelib}/subscription_manager/gui/*.py*
+%{python_sitelib}/subscription_manager/gui/data/ui/*.ui
+%{python_sitelib}/subscription_manager/gui/data/glade/*.glade
+%{python_sitelib}/subscription_manager/gui/data/icons/*.svg
 %if %{with python3}
-%{python_sitearch}/subscription_manager/gui/__pycache__
+%{python_sitelib}/subscription_manager/gui/__pycache__
 %endif
 %endif
 
@@ -1121,10 +1121,10 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %defattr(-,root,root,-)
 %attr(755,root,root) %{_sbindir}/subscription-manager-gui
 %if 0%{?suse_version}
-%dir %{python_sitearch}/subscription_manager/gui/data
-%dir %{python_sitearch}/subscription_manager/gui/data/glade
-%dir %{python_sitearch}/subscription_manager/gui/data/icons
-%dir %{python_sitearch}/subscription_manager/gui/data/ui
+%dir %{python_sitelib}/subscription_manager/gui/data
+%dir %{python_sitelib}/subscription_manager/gui/data/glade
+%dir %{python_sitelib}/subscription_manager/gui/data/icons
+%dir %{python_sitelib}/subscription_manager/gui/data/ui
 %dir %{_datadir}/appdata
 %dir %{_datadir}/gnome
 %dir %{_datadir}/gnome/help
@@ -1187,10 +1187,10 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %if 0%{?use_subscription_manager_migration}
 %files -n subscription-manager-migration
 %defattr(-,root,root,-)
-%dir %{python_sitearch}/subscription_manager/migrate
-%{python_sitearch}/subscription_manager/migrate/*.py*
+%dir %{python_sitelib}/subscription_manager/migrate
+%{python_sitelib}/subscription_manager/migrate/*.py*
 %if %{with python3}
-%{python_sitearch}/subscription_manager/migrate/__pycache__
+%{python_sitelib}/subscription_manager/migrate/__pycache__
 %endif
 %attr(755,root,root) %{_sbindir}/rhn-migrate-classic-to-rhsm
 
@@ -1226,15 +1226,15 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %dir %{_sysconfdir}/docker
 %dir %{_sysconfdir}/docker/certs.d
 %dir %{_sysconfdir}/rhsm/ca
-%dir %{python_sitearch}/subscription_manager/plugin
+%dir %{python_sitelib}/subscription_manager/plugin
 %endif
 %{_sysconfdir}/rhsm/pluginconf.d/container_content.ContainerContentPlugin.conf
 %{rhsm_plugins_dir}/container_content.py*
 %if %{with python3}
 %{rhsm_plugins_dir}/__pycache__/*container*
-%{python_sitearch}/subscription_manager/plugin/container/__pycache__
+%{python_sitelib}/subscription_manager/plugin/container/__pycache__
 %endif
-%{python_sitearch}/subscription_manager/plugin/container/*.py*
+%{python_sitelib}/subscription_manager/plugin/container/*.py*
 
 # Copying Red Hat CA cert into each directory:
 %attr(755,root,root) %dir %{_sysconfdir}/docker/certs.d/cdn.redhat.com
@@ -1246,9 +1246,9 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %defattr(-,root,root,-)
 %{_sysconfdir}/rhsm/pluginconf.d/ostree_content.OstreeContentPlugin.conf
 %{rhsm_plugins_dir}/ostree_content.py*
-%{python_sitearch}/subscription_manager/plugin/ostree/*.py*
+%{python_sitelib}/subscription_manager/plugin/ostree/*.py*
 %if %{with python3}
-%{python_sitearch}/subscription_manager/plugin/ostree/__pycache__
+%{python_sitelib}/subscription_manager/plugin/ostree/__pycache__
 %{rhsm_plugins_dir}/__pycache__/*ostree*
 %endif
 %endif
@@ -1277,14 +1277,14 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 
 %files -n %{rhsm_package_name}
 %defattr(-,root,root,-)
-%dir %{python_sitearch}/rhsm
-%{python_sitearch}/rhsm/*
+%{python_sitearch}/rhsm
+%{python_sitearch}/rhsm-*.egg-info
 
 %if %{with python2_rhsm}
 %files -n python2-subscription-manager-rhsm
 %defattr(-,root,root,-)
-%dir %{python2_sitearch}/rhsm
-%{python2_sitearch}/rhsm/*
+%{python2_sitearch}/rhsm
+%{python2_sitearch}/rhsm-1.19.4-py2.7.egg-info
 %endif
 
 %files -n subscription-manager-rhsm-certificates
@@ -1441,6 +1441,24 @@ gtk-update-icon-cache -f %{_datadir}/icons/hicolor &>/dev/null || :
 %endif
 
 %changelog
+* Wed Oct 07 2020 Christopher Snyder <csnyder@redhat.com> 1.28.4-1
+- Revert the --no-insights feature (csnyder@redhat.com)
+- adding Jenkinsfile and CI test scripts (jmolet@redhat.com)
+- 1847910: DNF plugins are part of sub-man RPM, libdnf RPM; ENT-2536
+  (jhnidek@redhat.com)
+- 1826300: Ignore auto-attach, when SCA mode is used; ENT-2341
+  (jhnidek@redhat.com)
+- 1862431: option validation error from unexpected config entry; ENT-2712
+  (wpoteat@redhat.com)
+- 1844508: sub-man sends version in the User-Agent header; ENT-2486
+  (wpoteat@redhat.com)
+- 1855437: syspurpose CLI should require sub-man rpm; ENT-2602
+  (jhnidek@redhat.com)
+- 1870567: Fix issue with locale and D-Bus method GetStatus; ENT-2772
+  (jhnidek@redhat.com)
+- 1868734: Fix issue with syspurpose attrs. set in act. key; ENT-2851
+  (jhnidek@redhat.com)
+
 * Wed Sep 02 2020 William Poteat <wpoteat@redhat.com> 1.28.3-1
 - 1753236: D-Bus Register properly, when org not specified; ENT-2096
   (jhnidek@redhat.com)

@@ -49,7 +49,7 @@ class build(_build):
 
     def has_po_files(self):
         try:
-            next(utils.Utils.find_files_of_type('po', '*.po'))
+            next(utils.Utils.find_files_of_type('po', ['*.po']))
             return True
         except StopIteration:
             return False
@@ -82,7 +82,7 @@ test_require = [
 
 setup(
     name="syspurpose",
-    version="1.28.3",
+    version="1.28.4",
     url="http://www.candlepinproject.org",
     description="Manage Red Hat System Purpose",
     license="GPLv2",
