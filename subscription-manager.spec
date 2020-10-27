@@ -100,7 +100,6 @@
 %endif
 
 %global use_dnf (%{with python3} && (0%{?fedora} || (0%{?rhel}))) || (0%{?rhel} >= 7)
-%global use_libdnf (0%{?fedora} >= 29 || 0%{?rhel} >= 8)
 %global use_yum (0%{?rhel} && 0%{?rhel} <= 7)
 %global use_cockpit 0%{?fedora} || 0%{?rhel} >= 7
 
@@ -244,7 +243,7 @@
 %global use_rhsm_icons 0%{use_cockpit} || 0%{use_rhsm_gtk}
 
 Name: subscription-manager
-Version: 1.28.4
+Version: 1.28.5
 Release: 1%{?dist}
 Summary: Tools and libraries for subscription and repository management
 %if 0%{?suse_version}
@@ -323,10 +322,8 @@ Requires: %{?suse_version:dbus-1-python} %{!?suse_version:dbus-python}
 Requires: %{?suse_version:yum} %{!?suse_version:yum >= 3.2.29-73}
 %endif
 
-%if %{use_dnf}
-Requires: dnf >= 1.0.0
-Requires: python3-dnf-plugins-core
-Requires: python3-librepo
+%if (%{use_dnf} && (0%{?fedora} || 0%{?rhel} >= 8))
+Requires: dnf-plugin-subscription-manager = %{version}
 %endif
 
 # Support GTK2 and GTK3 on both SUSE and RHEL...
@@ -400,15 +397,6 @@ BuildRequires: systemd
 
 %if !%{use_container_plugin}
 Obsoletes: subscription-manager-plugin-container
-%endif
-
-%if %{use_dnf}
-# The libdnf plugin is in separate RPM, but shubscription-manager should be dependent
-# on this RPM, because somebody can install microdnf on host and installing of product
-# certs would not work as expected without libdnf plugin
-Requires: libdnf-plugin-subscription-manager = %{version}
-# The dnf plugin is now part of subscription-manager
-Obsoletes: dnf-plugin-subscription-manager < 1.27.3-1
 %endif
 
 %description
@@ -526,25 +514,43 @@ subscriptions
 %endif
 
 
-%if %{use_libdnf}
-%package -n libdnf-plugin-subscription-manager
-Summary: Subscription Manager plugin for libdnf
+%if %use_dnf
+%package -n dnf-plugin-subscription-manager
+Summary: Subscription Manager plugins for DNF
 %if 0%{?suse_version}
 Group: Productivity/Networking/System
 %else
 Group: System Environment/Base
 %endif
+%if (0%{?fedora} >= 29 || 0%{?rhel} >= 8)
 BuildRequires: cmake
 BuildRequires: gcc
 BuildRequires: json-c-devel
 BuildRequires: libdnf-devel >= 0.22.5
 Requires: json-c
 Requires: libdnf >= 0.22.5
+%endif
+# See BZ 1581410 - avoid a circular dependency
+%if (0%{?rhel} < 8)
+Requires: %{name} >= %{version}-%{release}
+%endif
+%if %{with python3}
+Requires: python3-dnf-plugins-core
+Requires: python3-librepo
+%else
+Requires: python2-dnf-plugins-core
+%if (0%{?rhel} == 7)
+Requires: python-librepo
+%else
+Requires: python2-librepo
+%endif
+%endif
+Requires: dnf >= 1.0.0
 
-%description -n libdnf-plugin-subscription-manager
-This package provides a plugin to interact with repositories from the Red Hat
-entitlement platform; contains only one product-id binary plugin used by
-e.g. microdnf.
+%description -n dnf-plugin-subscription-manager
+This package provides plugins to interact with repositories and subscriptions
+from the Red Hat entitlement platform; contains subscription-manager and
+product-id plugins.
 %endif
 
 
@@ -744,7 +750,7 @@ make -f Makefile VERSION=%{version}-%{release} CFLAGS="%{optflags}" \
 python2 ./setup.py build --quiet --gtk-version=%{?gtk3:3}%{?!gtk3:2} --rpm-version=%{version}-%{release}
 %endif
 
-%if %{use_libdnf}
+%if (%{use_dnf} && (0%{?fedora} >= 29 || 0%{?rhel} >= 8))
 pushd src/dnf-plugins/product-id
 %cmake -DCMAKE_BUILD_TYPE="Release"
 %if (0%{?rhel} && 0%{?rhel} <= 8)
@@ -773,7 +779,7 @@ make -f Makefile install VERSION=%{version}-%{release} \
     %{?include_syspurpose:INCLUDE_SYSPURPOSE="1"} \
     %{?exclude_packages}
 
-%if %{use_libdnf}
+%if (%{use_dnf} && (0%{?fedora} >= 29 || 0%{?rhel} >= 8))
 pushd src/dnf-plugins/product-id
 mkdir -p %{buildroot}%{_libdir}/libdnf/plugins
 %if (0%{?rhel} && 0%{?rhel} <= 8)
@@ -1026,10 +1032,6 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
     %{_prefix}/lib/yum-plugins/search-disabled-repos.py*
 %endif
 
-%if %{use_dnf}
-%{python_sitelib}/dnf-plugins/*
-%endif
-
 # zypper plugins
 %if 0%{?suse_version}
 %{_prefix}/lib/zypp/plugins/services/rhsm
@@ -1268,10 +1270,13 @@ find %{buildroot} -name \*.py* -exec touch -r %{SOURCE0} '{}' \;
 %endif
 
 
-%if %{use_libdnf}
-%files -n libdnf-plugin-subscription-manager
+%if %use_dnf
+%files -n dnf-plugin-subscription-manager
 %defattr(-,root,root,-)
+%{python_sitelib}/dnf-plugins/*
+%if (0%{?fedora} >= 29 || 0%{?rhel} >= 8)
 %{_libdir}/libdnf/plugins/product-id.so
+%endif
 %endif
 
 
@@ -1441,6 +1446,15 @@ gtk-update-icon-cache -f %{_datadir}/icons/hicolor &>/dev/null || :
 %endif
 
 %changelog
+* Thu Oct 22 2020 Christopher Snyder <csnyder@redhat.com> 1.28.5-1
+- removing yarn (jmolet@redhat.com)
+- Revert "1847910: DNF plugins are part of sub-man RPM, libdnf RPM; ENT-2536"
+  (csnyder@redhat.com)
+- 1886745: Fix __init__ of CPProvider; ENT-3147 (jhnidek@redhat.com)
+- 1833316: unset-addons argument is missing in the bash completion of
+  syspurpose (wpoteat@redhat.com)
+- 1875595: Service-Level set issues (wpoteat@redhat.com)
+
 * Wed Oct 07 2020 Christopher Snyder <csnyder@redhat.com> 1.28.4-1
 - Revert the --no-insights feature (csnyder@redhat.com)
 - adding Jenkinsfile and CI test scripts (jmolet@redhat.com)
