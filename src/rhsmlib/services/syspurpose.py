@@ -14,7 +14,7 @@ from __future__ import print_function, division, absolute_import
 # in this software or its documentation.
 
 """
-This module provides service for system purpose identity.
+This module provides service for system purpose
 """
 
 from subscription_manager import injection as inj
@@ -48,7 +48,7 @@ class Syspurpose(object):
         if self.identity.is_valid() and self.cp.has_capability("syspurpose"):
             self.owner = inj.require(inj.CURRENT_OWNER_CACHE)
             cache = inj.require(inj.SYSPURPOSE_VALID_FIELDS_CACHE)
-            self.valid_fields = cache.read_cache()
+            self.valid_fields = cache.read_data(uep=self.cp, identity=self.identity)
         return self.valid_fields
 
     @staticmethod
@@ -56,7 +56,7 @@ class Syspurpose(object):
         """
         Return translated string representation syspurpose status
         :param status: syspurpose status
-        :return: Translated sttring with status
+        :return: Translated string with status
         """
         # Status map has to be here, because we have to translate strings
         # when function is called (not during start of application) due to

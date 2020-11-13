@@ -74,15 +74,46 @@ class SyspurposeDBusObject(base_object.BaseObject):
 
     @util.dbus_service_method(
         constants.SYSPURPOSE_INTERFACE,
-        in_signature='',
+        in_signature='s',
         out_signature='s'
     )
     @util.dbus_handle_exceptions
-    def GetSyspurposeStatus(self, sender=None):
+    def GetSyspurposeStatus(self, locale, sender=None):
+        """
+        D-Bus method for getting system purpose status
+        :param locale: string representing locale
+        :param sender: object representing application which called this method
+        :return:
+        """
+        locale = dbus_utils.dbus_to_python(locale, expected_type=str)
+        Locale.set(locale)
+        cp = self.build_uep({})
+        system_purpose = syspurpose.Syspurpose(cp)
+        syspurpose_status = system_purpose.get_syspurpose_status()['status']
+        return system_purpose.get_overall_status(syspurpose_status)
+
+    @util.dbus_service_method(
+        constants.SYSPURPOSE_INTERFACE,
+        in_signature='s',
+        out_signature='s'
+    )
+    @util.dbus_handle_exceptions
+    def GetValidFields(self, locale, sender=None):
+        """
+        Method for getting valid syspurpose attributes and values
+        :param locale: string with locale
+        :param sender: object representing application which called this method
+        :return: string representing dictionary with valid fields
+        """
+        locale = dbus_utils.dbus_to_python(locale, expected_type=str)
+        Locale.set(locale)
         cp = self.build_uep({})
         systempurpose = syspurpose.Syspurpose(cp)
-        syspurpose_status = systempurpose.get_syspurpose_status()['status']
-        return systempurpose.get_overall_status(syspurpose_status)
+        valid_fields = systempurpose.get_owner_syspurpose_valid_fields()
+        if valid_fields is None:
+            return "{}"
+        else:
+            return json.dumps(valid_fields)
 
     @util.dbus_service_signal(
         constants.SYSPURPOSE_INTERFACE,
