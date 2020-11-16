@@ -108,10 +108,18 @@ class SyspurposeDBusObject(base_object.BaseObject):
         locale = dbus_utils.dbus_to_python(locale, expected_type=str)
         Locale.set(locale)
         cp = self.build_uep({})
-        systempurpose = syspurpose.Syspurpose(cp)
-        valid_fields = systempurpose.get_owner_syspurpose_valid_fields()
+        system_purpose = syspurpose.Syspurpose(cp)
+        valid_fields = system_purpose.get_owner_syspurpose_valid_fields()
         if valid_fields is None:
-            return "{}"
+            # When it is not possible to get valid fields, then raise exception
+            if self.is_registered() is False:
+                raise dbus.DBusException(
+                    "Unable to get system purpose valid fields. System is not registered.",
+                )
+            else:
+                raise dbus.DBusException(
+                    "Unable to get system purpose valid fields.",
+                )
         else:
             return json.dumps(valid_fields)
 
