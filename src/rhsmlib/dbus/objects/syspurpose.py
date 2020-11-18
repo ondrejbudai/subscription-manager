@@ -28,11 +28,58 @@ from rhsmlib.services import syspurpose
 from syspurpose.files import SyspurposeStore
 
 from subscription_manager.injectioninit import init_dep_injection
+from subscription_manager.i18n import ugettext as _
 from subscription_manager.i18n import Locale
 
 init_dep_injection()
 
 log = logging.getLogger(__name__)
+
+
+class ThreeWayMergeConflict(dbus.DBusException):
+    """
+    Raise this exception, when client application tries to
+    """
+    _dbus_error_name = "%s.Error" % constants.SYSPURPOSE_INTERFACE
+    include_traceback = False
+    severity = "warn"
+
+    def __init__(self, conflict_fields):
+        """
+        Initialize this exception
+        :param conflict_fields: dictionary with conflicted attributes.
+            The key is attribute and value is current value set on server.
+        """
+        self.conflict_fields = conflict_fields
+
+    def __str__(self):
+        """
+        Text representation of exception
+        :return: string of exception
+        """
+        conflicts = []
+        for key, value in self.conflict_fields.items():
+            conflicts.append(
+                '{conflict_attr} of "{existing_value}"'.format(
+                    conflict_attr=key,
+                    existing_value=value
+                )
+            )
+        conflict_msg = ", ".join(conflicts)
+        if len(conflicts) == 1:
+            return _(
+                'Warning: A {conflict_msg} was recently set '
+                'for this system by the entitlement server administrator.'.format(
+                    conflict_msg=conflict_msg
+                )
+            )
+        else:
+            return _(
+                'Warning: A {conflict_msg} were recently set '
+                'for this system by the entitlement server administrator.'.format(
+                    conflict_msg=conflict_msg
+                )
+            )
 
 
 class SyspurposeDBusObject(base_object.BaseObject):
@@ -122,6 +169,38 @@ class SyspurposeDBusObject(base_object.BaseObject):
                 )
         else:
             return json.dumps(valid_fields)
+
+    @util.dbus_service_method(
+        constants.SYSPURPOSE_INTERFACE,
+        in_signature='a{sv}s',
+        out_signature='s'
+    )
+    @util.dbus_handle_exceptions
+    def SetSyspurpose(self, syspurpose_values, locale, sender):
+        """
+        Set syspurpose values
+        :param syspurpose_values: Dictionary with all syspurpose values
+        :param locale: String with locale
+        :param sender: Object representing client application that called this method
+        :return: String with successfully set syspurpose values
+        """
+        syspurpose_values = dbus_utils.dbus_to_python(syspurpose_values, expected_type=dict)
+        locale = dbus_utils.dbus_to_python(locale, expected_type=str)
+        Locale.set(locale)
+
+        cp = self.build_uep({})
+        system_purpose = syspurpose.Syspurpose(cp)
+        new_syspurpose_values = system_purpose.set_syspurpose_values(syspurpose_values)
+
+        # Check if there was any conflict during three-way merge
+        conflicts = {}
+        for key, value in new_syspurpose_values.items():
+            if key in syspurpose_values and syspurpose_values[key] != value:
+                conflicts[key] = value
+        if len(conflicts) > 0:
+            raise ThreeWayMergeConflict(conflict_fields=conflicts)
+
+        return json.dumps(new_syspurpose_values)
 
     @util.dbus_service_signal(
         constants.SYSPURPOSE_INTERFACE,

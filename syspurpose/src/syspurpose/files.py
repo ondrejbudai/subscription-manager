@@ -268,10 +268,8 @@ class SyncedStore(object):
         self.cache_path = self.CACHE_PATH
         self.report = report
         self.local_file = None
-        self.local_contents = None
         self.local_contents = self.get_local_contents()
         self.cache_file = None
-        self.cache_contents = None
         self.cache_contents = self.get_cached_contents()
         self.changed = False
         self.on_changed = on_changed
@@ -299,8 +297,12 @@ class SyncedStore(object):
             if self.uep and not self.uep.has_capability('syspurpose'):
                 log.debug('Server does not support syspurpose, syncing only locally.')
                 return self._sync_local_only()
-        except:
-            log.debug('Failed to detect whether the server has syspurpose capability')
+        except Exception as err:
+            log.debug(
+                'Failed to detect whether the server has syspurpose capability: {err}'.format(
+                    err=err
+                )
+            )
             return self._sync_local_only()
 
         remote_contents = self.get_remote_contents()
@@ -345,23 +347,27 @@ class SyncedStore(object):
         return result
 
     def get_local_contents(self):
+        """
+        Try to load local content from file
+        :return: dictionary with system purpose values
+        """
         try:
-            if self.local_contents is None:
-                self.local_contents = json.load(io.open(self.path, 'r', encoding='utf-8'))
-                log.debug('Successfully read local syspurpose contents.')
-            return self.local_contents
+            self.local_contents = json.load(io.open(self.path, 'r', encoding='utf-8'))
         except (os.error, ValueError, IOError):
             if self.report is not None:
                 self.report._exceptions.append(
                     'Cannot read local syspurpose, trying to update from server only'
                 )
-            log.debug('Unable to read local system purpose at  \'%s\'\nUsing the server values.'
-                      % self.path)
+            log.debug('Unable to read local system purpose at "%s"' % self.path)
             self.update_local({})
             self.local_contents = {}
-            return self.local_contents
+        return self.local_contents
 
     def get_remote_contents(self):
+        """
+        Try to get remote content from server
+        :return: dictionary with system purpose values
+        """
         if self.uep is None or self.consumer_uuid is None:
             log.debug('Failed to read remote syspurpose from server: no available connection, '
                       'or the consumer is not registered.')
@@ -382,14 +388,17 @@ class SyncedStore(object):
         return result
 
     def get_cached_contents(self):
-        if not self.cache_contents:
-            try:
-                self.cache_contents = json.load(io.open(self.cache_path, 'r', encoding='utf-8'))
-                log.debug('Successfully read cached syspurpose contents.')
-            except (ValueError, os.error, IOError):
-                log.debug('Unable to read cached syspurpose contents at \'%s\'.' % self.path)
-                self.cache_contents = {}
-                self.update_cache({})
+        """
+        Try to load cached server response from the file
+        :return: dictionary with system purpose values
+        """
+        try:
+            self.cache_contents = json.load(io.open(self.cache_path, 'r', encoding='utf-8'))
+            log.debug('Successfully read cached syspurpose contents.')
+        except (ValueError, os.error, IOError):
+            log.debug('Unable to read cached syspurpose contents at \'%s\'.' % self.path)
+            self.cache_contents = {}
+            self.update_cache({})
         return self.cache_contents
 
     def update_local(self, data):
